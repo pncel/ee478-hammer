@@ -1,0 +1,59 @@
+# Mentor tools:
+mentor.mentor_home: ""
+# Mentor license server/file
+mentor.MGLS_LICENSE_FILE: "__missing__"
+
+# Cadence tools:
+cadence.cadence_home: "__missing__"
+synthesis.genus.version: "211"
+par.innovus.version: "211"
+timing.tempus.version: "211"
+# Add paths to tool plugins
+vlsi.core.synthesis_tool_path: ["${vlsi.core.local_tool_path}/hammer-cadence-plugins/synthesis"] # Append path to plugins
+vlsi.core.synthesis_tool_path_meta: ["append", "lazysubst"]
+vlsi.core.par_tool_path: ["${vlsi.core.local_tool_path}/hammer-cadence-plugins/par"] # Append path to plugins
+vlsi.core.par_tool_path_meta: ["append", "lazysubst"]
+vlsi.core.formal_tool_path: ["${vlsi.core.local_tool_path}/hammer-cadence-plugins/formal"] # Append path to plugins
+vlsi.core.formal_tool_path_meta: ["append", "lazysubst"]
+vlsi.core.timing_tool_path: ["${vlsi.core.local_tool_path}/hammer-cadence-plugins/timing"] # Append path to plugins
+vlsi.core.timing_tool_path_meta: ["append", "lazysubst"]
+vlsi.core.drc_tool_path: ["${vlsi.core.local_tool_path}/hammer-mentor-plugins/hammer/drc"] # Append path to plugins
+vlsi.core.drc_tool_path_meta: ["append", "lazysubst"]
+vlsi.core.lvs_tool_path: ["${vlsi.core.local_tool_path}/hammer-mentor-plugins/hammer/lvs"] # Append path to plugins
+vlsi.core.lvs_tool_path_meta: ["append", "lazysubst"]
+# Cadence license server/file
+cadence.CDS_LIC_FILE: "__missing__"
+
+# Synopsys tools:
+synopsys.synopsys_home: "__missing__"
+sim.vcs.version: "__missing__"
+sim.verdi.version: "__missing__"
+# Add paths to tool plugins
+vlsi.core.sim_tool_path: ["${vlsi.core.local_tool_path}/hammer-synopsys-plugins/sim"] # Append path to plugins
+vlsi.core.sim_tool_path_meta: ["append", "lazysubst"]
+# Synopsys license server/files
+synopsys.SNPSLMD_LICENSE_FILE: "__missing__"
+synopsys.MGLS_LICENSE_FILE: "__missing__"
+
+# OpenCircuitDesign tools:
+drc.magic.magic_bin: "__missing__"
+lvs.netgen:
+  netgen_bin: "__missing__"
+  setup_file: "${technology.sky130.sky130A}/libs.tech/netgen/sky130A_setup.tcl"
+klayout:
+  klayout_bin: "__missing__"
+  ruby_lib: "__missing__"
+  layer_properties: "__missing__"
+
+# BSG tools:
+vlsi.core.sram_generator_tool_path: ["${vlsi.core.local_tool_path}/hammer-bsg-plugins/sram_generator"]
+vlsi.core.sram_generator_tool_path_meta: ["append", "lazysubst"]
+sram_generator.fakeram.fakeram_make: "${vlsi.core.local_tool_path}/bsg_fakeram/Makefile"
+sram_generator.fakeram.fakeram_make_meta: "lazysubst"
+
+# PDK paths:
+technology.sky130:
+  sky130A: "__missing__"
+  sky130_nda: "" # Not needed
+  sky130_nda_meta: lazysubst
+  #openram_lib: "path-to-sky130_sram_macros/"

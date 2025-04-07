@@ -1,0 +1,9 @@
+/version.txt
+
+_cache
+_static
+_templates
+
+__pycache__
+
+TODO

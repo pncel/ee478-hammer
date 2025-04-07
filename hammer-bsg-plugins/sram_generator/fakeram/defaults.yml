@@ -1,0 +1,55 @@
+# Configuration options and defaults for BSG FakeRam.
+# The values specified in this file are the defaults.
+
+sram_generator.fakeram:
+  # Location of the binary.
+  fakeram_make: "bsg_fakeram/Makefile"
+  fakeram_make_meta: lazysubst
+
+  # After generating SRAMS, use Magic to generate GDS's from the LEF's
+  # Generating GDS's requires the settings "drc.magic.magic_bin" and "drc.magic.rcfile" 
+  # to be valid.
+  gen_gds: false
+
+  # Setting for generated SRAM verilog model. 
+  # Set true to expand '$setuphold' checks for every bit of every input signal.
+  # (This appears to be required for VCS to parse the file correctly)
+  vlogTimingCheckSignalExpansion: true
+
+  # DEFAULT SETTINGS FOR SKY130
+
+  # The process node. This is used to tell cacti what technology to use when
+  # estimating power, performance and area numbers.
+  tech_nm: 130
+
+  # The operating voltage.
+  voltage: 1.8
+
+  # String to add in front of every metal layer number for the layer name.
+  metalPrefix: "met"
+
+  # The pin width for signal pins.
+  pinWidth_nm: 300
+
+  # Pin height (or depth into the ram area) for the signal pins.
+  pinHeight_nm: 800
+
+  # The minimum pin pitch for signal pins (all pins will have a pitch that is a
+  # multuple of this pitch. The first pin will be a multiple of this pitch from
+  # the bottom edge of the macro too.
+  pinPitch_nm: 600
+
+  # Optional: snap the width and height of the sram to a multiple value.
+  snapWidth_nm:   460
+  snapHeight_nm: 2720
+
+  # Flips the pin orientations. Non-fliped assumes metal1 is vertical therefore
+  # supply pins on metal4 will be horizontal and signal pins will also be on
+  # metal4. If set to true, supply pins on metal4 will be vertical and signal
+  # pins will be on metal3.
+  flipPins: true
+
+  # In the simulation model, if set to 1, then the output data will latch and
+  # remain unchanged when chip-enable is deasserted.
+  latch_last_read: 1
+  
