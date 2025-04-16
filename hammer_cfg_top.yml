@@ -46,7 +46,7 @@ sim.inputs:
     - "+warn=noSDFCOM_ANICD" # Ignore negative timing adjustment warnings
 
 # Default clock (in case user manually specifies clocks in custom SDC scripts.)
-vlsi.inputs.clocks: [{name: "DEFAULT_CLOCK", period: "0ns"}]
+vlsi.inputs.clocks: []
 
 # Hammer will auto-generate a CPF for simple power designs; see hammer/src/hammer-vlsi/defaults.yml for more info
 vlsi.inputs.power_spec_mode: "auto"
