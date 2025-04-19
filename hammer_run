@@ -28,6 +28,7 @@ class ProjectHammerDriver(CLIDriver):
     def get_extra_par_hooks(self) -> List[HammerToolHookAction]:
         extra_hooks = [
             # Default set of steps can be found in the CAD tool plugin's __init__.py
+            hammer_vlsi.HammerTool.make_pre_insertion_hook("floorplan_design", lab_hooks.innovus_set_max_routing_layer),
 
             # make_pre_insertion_hook will execute the custom hook before the specified step
             # SYNTAX: make_pre_insertion_hook("EXISTING_STEP", INSERTED_HOOK) Examples:

@@ -100,6 +100,20 @@ def innovus_gen_klayout_view_script(x: hammer_vlsi.HammerTool) -> bool:
     x.logger.info('Klayout chip viewer script generated.')
     return True
 
+def innovus_set_max_routing_layer(x: hammer_vlsi.HammerTool) -> bool:
+    '''
+    Restrict metal use during par.
+    
+    Where to use:
+        pre_insertion_hook for the 'floorplan_design' Innovus PAR step.
+    '''
+    max_layer = x.get_setting('par.max_routing_layer')
+    if max_layer is not None:
+        x.verbose_append(f"set_db design_top_routing_layer {max_layer}")
+        x.logger.info(f'Routing layer constrained to on or below {max_layer}')
+        return True
+    return False
+
 # FORMAL HOOKS ################################################################
 
 def conformal_remove_mem_src(x: hammer_vlsi.HammerTool) -> bool:
