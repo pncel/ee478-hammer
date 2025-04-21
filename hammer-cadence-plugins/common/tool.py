@@ -89,7 +89,7 @@ class CadenceTool(HasSDCSupport, HasCPFSupport, HasUPFSupport, TCLTool, HammerTo
         clock_constraints_fragment = os.path.join(self.run_dir, "clock_constraints_fragment.sdc")
         with open(clock_constraints_fragment, "w") as f:
             f.write(self.sdc_clock_constraints)
-        sdc_files.append(clock_constraints_fragment)
+        # sdc_files.append(clock_constraints_fragment)
 
         # Generate port constraints.
         pin_constraints_fragment = os.path.join(self.run_dir, "pin_constraints_fragment.sdc")

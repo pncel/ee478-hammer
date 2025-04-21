@@ -409,6 +409,7 @@ def genus_global_settings(ht: HammerTool) -> bool:
     verbose_append("set_db hdl_auto_sync_set_reset true")
     # BSG Derek - Don't set undriven outputs to 0 (needed for Formal Verification)
     verbose_append("set_db hdl_unconnected_value none")
+    verbose_append("set_db hdl_language sv")  
 
     return True
 

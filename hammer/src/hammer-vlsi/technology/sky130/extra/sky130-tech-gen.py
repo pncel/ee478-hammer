@@ -91,4 +91,4 @@ with open('sky130-tech-gen-files/sites.json', 'r') as f:
 data["sites"] = sites["sites"]
 
 with open('../sky130.tech.json', 'w') as f:
-    json.dump(data, f, indent=2)
+    json.dump(data, f, indent=2) 
