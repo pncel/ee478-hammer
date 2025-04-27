@@ -6,6 +6,7 @@ import json
 import os, stat
 from tokenize import maybe
 
+from hammer_vlsi.constraints import MMMCCornerType
 import hammer_vlsi
 from hammer_vlsi import CLIDriver, HammerToolHookAction, HierarchicalMode
 import hammer_tech
@@ -56,6 +57,35 @@ def fakeram_gen_macro_swaps(x: hammer_vlsi.HammerTool) -> bool:
             name='macro_hard_swap', verilog_synth=hard_swap_v_name, verilog_sim=hard_swap_v_name
         )
     ))
+    return True
+
+# SYN HOOKS ###################################################################
+
+def genus_set_derating(x: hammer_vlsi.HammerTool) -> bool:
+    '''
+    Set derating for Genus synthesis.
+    
+    Where to use:
+        pre_insertion_hook for the 'syn_generic' Genus step.
+    '''
+    # get derating factor
+    derating_factor = x.get_setting('syn.derating_factor')
+    if derating_factor is None:
+        derating_factor = 0.03
+    less = 1.0 - derating_factor
+    more = 1.0 + derating_factor
+
+    # get all corners
+    corners = x.get_mmmc_corners()
+    if corners:
+        for corner in corners:
+            type_ = "setup" if corner.type is MMMCCornerType.Setup else \
+                "hold" if corner.type is MMMCCornerType.Hold else \
+                "extra" if corner.type is MMMCCornerType.Extra else None
+            if type_ is None:
+                raise ValueError(f"Unsupported MMMCCornerType for corner {corner.name}: {corner.type}")
+            x.verbose_append(f'set_timing_derate -delay_corner {corner.name}.{type_}_delay -early {less}')
+            x.verbose_append(f'set_timing_derate -delay_corner {corner.name}.{type_}_delay -late {more}')
     return True
 
 # PAR HOOKS ###################################################################

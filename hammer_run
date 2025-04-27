@@ -20,6 +20,7 @@ class ProjectHammerDriver(CLIDriver):
     
     def get_extra_synthesis_hooks(self) -> List[HammerToolHookAction]:
         extra_hooks = [
+            hammer_vlsi.HammerTool.make_pre_insertion_hook('syn_generic', lab_hooks.genus_set_derating),
             hammer_vlsi.HammerTool.make_replacement_hook('syn_generic', essential_hooks.genus_syn_with_preserve),
             hammer_vlsi.HammerTool.make_replacement_hook('syn_map',     essential_hooks.genus_maybe_syn_map)
         ]
