@@ -508,6 +508,7 @@ class Innovus(HammerPlaceAndRouteTool, CadenceTool):
     def place_opt_design(self) -> bool:
         """Place the design and do pre-routing optimization."""
         self.verbose_append("place_opt_design")
+        self.verbose_append("opt_design")
         return True
 
     def clock_tree(self) -> bool:
