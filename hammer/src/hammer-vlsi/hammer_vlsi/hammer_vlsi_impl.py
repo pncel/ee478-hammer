@@ -648,7 +648,7 @@ class HammerPlaceAndRouteTool(HammerTool):
                 assert isinstance(s.weight, int)
                 return s.weight
             weights = list(map(get_weight, self.get_independent_power_nets()))  # type: List[int]
-            assert len(ground_net_names) == 1, "FIXME, I am assuming there's only 1 ground net"
+            assert len(ground_net_names) == 1, "FIXME, I am assuming there's only 1 ground net. Added: please use manual mode for PG generation."
             return self.specify_all_power_straps_by_tracks(layers, ground_net_names[0], power_net_names, weights, bbox, pin_layers)
         else:
             raise NotImplementedError("Power strap generation method %s is not implemented" % method)
