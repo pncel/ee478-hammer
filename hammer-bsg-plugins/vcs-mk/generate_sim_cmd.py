@@ -169,7 +169,7 @@ def get_expanded_verilog_hierarchy_modules(filename):
                 modules.append(current_module)
                 module_children[current_module] = []
                 continue
-            m = re.search("([a-z_A-Z0-9\\\\]+)\s+([a-z_A-Z0-9.\\[\\]\\\\]+)\s*\(.*\);", line);
+            m = re.search("([a-z_A-Z0-9\\\\]+)\s+([a-z_A-Z0-9.\\[\\]\\\\]+)\s*\(.*\);", line)
             if m is not None:
                 assert current_module is not None, line
                 module_children[current_module].append([m.group(1), m.group(2)])
