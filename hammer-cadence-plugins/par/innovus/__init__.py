@@ -526,7 +526,6 @@ class Innovus(HammerPlaceAndRouteTool, CadenceTool):
         #        self.verbose_append("ccopt_design -hold -report_dir hammer_cts_debug -report_prefix hammer_cts")
         #    else:
         #        self.verbose_append("clock_design")
-        self.verbose_append("set_db cts_max_fanout 32")
         self.verbose_append("create_clock_tree_spec")
         if bool(self.get_setting("par.innovus.use_cco")):
             # -hold is a secret flag for ccopt_design (undocumented anywhere)
