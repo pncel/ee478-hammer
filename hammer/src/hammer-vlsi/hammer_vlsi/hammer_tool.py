@@ -1434,7 +1434,7 @@ class HammerTool(metaclass=ABCMeta):
                 "Invalid physical_only_cells_mode {mode}. Using auto physical only cells list.".format(mode=physical_only_cells_mode))
 
         return physical_only_cells_list
-
+    
     def get_dont_use_list(self) -> List[str]:
         """
         Get a "don't use" list in accordance with settings in the Hammer IR.
