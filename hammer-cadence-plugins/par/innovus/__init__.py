@@ -744,6 +744,8 @@ class Innovus(HammerPlaceAndRouteTool, CadenceTool):
 
     def write_spefs(self) -> bool:
         # Output a SPEF file that contains the parasitic extraction results
+        self.verbose_append("set_db extract_rc_engine post_route")
+        self.verbose_append("set_db extract_rc_effort_level high")
         self.verbose_append("set_db extract_rc_coupled true")
         # self.verbose_append("set_extract_shrink_factor 0.85") # TODO: Use this setting to artificially improve Signoff STA?
         self.verbose_append("extract_rc")
