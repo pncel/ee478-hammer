@@ -96,6 +96,156 @@ class Tempus(HammerTimingTool, CadenceTool):
             self.run_sta
         ]
         return self.make_steps_from_methods(steps)
+    
+    def generate_mmmc_script_timing(self) -> str:
+        """
+        Output for the mmmc.tcl script.
+        Innovus (init_design) requires that the timing script be placed in a separate file.
+
+        :return: Contents of the mmmc script.
+        """
+        mmmc_output = []  # type: List[str]
+
+        def append_mmmc(cmd: str) -> None:
+            self.verbose_tcl_append(cmd, mmmc_output)
+
+        # Create an Innovus constraint mode.
+        constraint_mode = "my_constraint_mode"
+
+        sdc_files = self.generate_sdc_files()
+
+        # Add Custom SDCs, if present.
+        try: sdc_files.extend( self.get_setting('vlsi.inputs.custom_sdc_files', nullvalue=[]) )
+        except KeyError: pass
+
+        # If the post_synth_sdc script is present, use it instead of the input SDC files.
+        #post_synth_sdc = self.post_synth_sdc
+        #if post_synth_sdc is not None:
+        #    sdc_files = [ post_synth_sdc ]
+        par_dir = self.run_dir.replace("syn-rundir", "par-rundir").replace("timing-par-rundir", "par-rundir")
+        par_sdc = os.path.join(par_dir, f"{self.top_module}.par.sdc")
+        if os.path.isfile(par_sdc):
+            sdc_files = [par_sdc]
+            self.logger.info(f"Using par SDC: {par_sdc}")
+        else:
+            post_synth_sdc = self.post_synth_sdc
+            if post_synth_sdc is not None:
+                sdc_files = [post_synth_sdc]
+                self.logger.info(f"Par SDC not found, using post_synth SDC: {post_synth_sdc}")
+            else:
+                self.logger.info("Neither par SDC nor post_synth SDC found, using generated SDC files")
+
+        # TODO: add floorplanning SDC
+        if len(sdc_files) > 0:
+            sdc_files_arg = "-sdc_files [list {sdc_files}]".format(
+                sdc_files=" ".join(sdc_files)
+            )
+        else:
+            blank_sdc = os.path.join(self.run_dir, "blank.sdc")
+            self.run_executable(["touch", blank_sdc])
+            sdc_files_arg = "-sdc_files {{ {} }}".format(blank_sdc)
+        append_mmmc("create_constraint_mode -name {name} {sdc_files_arg}".format(
+            name=constraint_mode,
+            sdc_files_arg=sdc_files_arg
+        ))
+
+        corners = self.get_mmmc_corners()  # type: List[MMMCCorner]
+        # In parallel, create the delay corners
+        if corners:
+            setup_view_names = [] # type: List[str]
+            hold_view_names = [] # type: List[str]
+            extra_view_names = [] # type: List[str]
+            for corner in corners:
+                # Setting up views for all defined corner types: setup, hold, extra
+                if corner.type is MMMCCornerType.Setup:
+                    corner_name = "{n}.{t}".format(n=corner.name, t="setup")
+                    setup_view_names.append("{n}_view".format(n=corner_name))
+                elif corner.type is MMMCCornerType.Hold:
+                    corner_name = "{n}.{t}".format(n=corner.name, t="hold")
+                    hold_view_names.append("{n}_view".format(n=corner_name))
+                elif corner.type is MMMCCornerType.Extra:
+                    corner_name = "{n}.{t}".format(n=corner.name, t="extra")
+                    extra_view_names.append("{n}_view".format(n=corner_name))
+                else:
+                    raise ValueError("Unsupported MMMCCornerType")
+
+                # First, create Innovus library sets
+                append_mmmc("create_library_set -name {name}_set -timing [list {list}]".format(
+                    name=corner_name,
+                    list=self.get_timing_libs(corner)
+                ))
+                # Skip opconds for now
+                # Next, create Innovus timing conditions
+                append_mmmc("create_timing_condition -name {name}_cond -library_sets [list {name}_set]".format(
+                    name=corner_name
+                ))
+                # Next, create Innovus rc corners from qrc tech files
+                try: captbl_arg = f'-cap_table {self.get_setting("par.inputs.cap_table_file")}'
+                except KeyError: captbl_arg = ''
+                append_mmmc("create_rc_corner -name {name}_rc -temperature {tempInCelsius} {qrc} {ctable}".format(
+                    name=corner_name,
+                    tempInCelsius=str(corner.temp.value),
+                    qrc="-qrc_tech {}".format(self.get_mmmc_qrc(corner)) if self.get_mmmc_qrc(corner) != '' else '',
+                    ctable = captbl_arg
+                ))
+                # Next, create an Innovus delay corner.
+                append_mmmc(
+                    "create_delay_corner -name {name}_delay -timing_condition {name}_cond -rc_corner {name}_rc".format(
+                        name=corner_name
+                ))
+                # Next, create the analysis views
+                append_mmmc("create_analysis_view -name {name}_view -delay_corner {name}_delay -constraint_mode {constraint}".format(
+                    name=corner_name,
+                    constraint=constraint_mode
+                ))
+
+            # Finally, apply the analysis view.
+            # TODO: should not need to analyze extra views as well. Defaulting to hold for now (min. runtime impact).
+            append_mmmc("set_analysis_view -setup {{ {setup_views} }} -hold {{ {hold_views} {extra_views} }}".format(
+                setup_views=" ".join(setup_view_names),
+                hold_views=" ".join(hold_view_names),
+                extra_views=" ".join(extra_view_names)
+            ))
+        else:
+            # First, create an Innovus library set.
+            library_set_name = "my_lib_set"
+            append_mmmc("create_library_set -name {name} -timing [list {list}]".format(
+                name=library_set_name,
+                list=self.get_timing_libs()
+            ))
+            # Next, create an Innovus timing condition.
+            timing_condition_name = "my_timing_condition"
+            append_mmmc("create_timing_condition -name {name} -library_sets [list {list}]".format(
+                name=timing_condition_name,
+                list=library_set_name
+            ))
+            # extra junk: -opcond ...
+            rc_corner_name = "rc_cond"
+            append_mmmc("create_rc_corner -name {name} {qrc}".format(
+                name=rc_corner_name,
+                qrc="-qrc_tech {}".format(self.get_qrc_tech()) if self.get_qrc_tech() != '' else ''
+            ))
+            # Next, create an Innovus delay corner.
+            delay_corner_name = "my_delay_corner"
+            append_mmmc(
+                "create_delay_corner -name {name} -timing_condition {timing_cond} -rc_corner {rc}".format(
+                    name=delay_corner_name,
+                    timing_cond=timing_condition_name,
+                    rc=rc_corner_name
+                ))
+            # extra junk: -rc_corner my_rc_corner_maybe_worst
+            # Next, create an Innovus analysis view.
+            analysis_view_name = "my_view"
+            append_mmmc("create_analysis_view -name {name} -delay_corner {corner} -constraint_mode {constraint}".format(
+                name=analysis_view_name, corner=delay_corner_name, constraint=constraint_mode))
+            # Finally, apply the analysis view.
+            # TODO: introduce different views of setup/hold and true multi-corner
+            append_mmmc("set_analysis_view -setup {{ {setup_view} }} -hold {{ {hold_view} }}".format(
+                setup_view=analysis_view_name,
+                hold_view=analysis_view_name
+            ))
+
+        return "\n".join(mmmc_output)
 
     def init_design(self) -> bool:
         """ Load design and analysis corners """
@@ -106,7 +256,7 @@ class Tempus(HammerTimingTool, CadenceTool):
         # TODO: read AOCV or SOCV+LVF libraries if available
         mmmc_path = os.path.join(self.run_dir, "mmmc.tcl")
         with open(mmmc_path, "w") as f:
-            f.write(self.generate_mmmc_script())
+            f.write(self.generate_mmmc_script_timing())
         verbose_append("read_mmmc {mmmc_path}".format(mmmc_path=mmmc_path))
 
         # Read physical LEFs (optional in Tempus)

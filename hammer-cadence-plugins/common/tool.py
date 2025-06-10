@@ -124,7 +124,7 @@ class CadenceTool(HasSDCSupport, HasCPFSupport, HasUPFSupport, TCLTool, HammerTo
         post_synth_sdc = self.post_synth_sdc
         if post_synth_sdc is not None:
             sdc_files = [ post_synth_sdc ]
-
+    
         # TODO: add floorplanning SDC
         if len(sdc_files) > 0:
             sdc_files_arg = "-sdc_files [list {sdc_files}]".format(
