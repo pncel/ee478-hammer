@@ -32,7 +32,7 @@ class LEFUtils:
         found_size = False  # type: bool
         for line in lines:
             # Check for PROPERTYDEFINITIONS statement
-            regex = "^\s*PROPERTYDEFINITIONS"
+            regex = r"^\s*PROPERTYDEFINITIONS"
             regex_search = re.search(regex, line)
 
             if regex_search:
@@ -53,7 +53,7 @@ class LEFUtils:
                 continue
 
             # Check for MACRO statement
-            regex = "MACRO\s+([a-zA-Z0-9_]+)"
+            regex = r"MACRO\s+([a-zA-Z0-9_]+)"
             regex_search = re.search(regex, line)
 
             if regex_search:
@@ -77,7 +77,7 @@ class LEFUtils:
                 continue
 
             # Check for SIZE
-            regex = "SIZE\s+([\d\.]+)\s+[bB][yY]\s+([\d\.]+)\s*;"
+            regex = r"SIZE\s+([\d\.]+)\s+[bB][yY]\s+([\d\.]+)\s*;"
             regex_search = re.search(regex, line)
 
             if regex_search:

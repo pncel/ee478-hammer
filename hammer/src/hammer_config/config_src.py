@@ -1063,10 +1063,10 @@ def combine_configs(configs: Iterable[dict]) -> dict:
 
 def load_config_from_paths(config_paths: Iterable[str], strict: bool = False) -> List[dict]:
     """
-    Load configuration from paths containing \*.yml and \*.json files.
+    Load configuration from paths containing *.yml and *.json files.
     Files specified later in the list take precedence (see combine_configs).
 
-    :param config_paths: Path to \*.yml and \*.json config files.
+    :param config_paths: Path to *.yml and *.json config files.
     :param strict: Set to true to error if the file is not found.
     :return: A list of configs in order of specification.
     """
