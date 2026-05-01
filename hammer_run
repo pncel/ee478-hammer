@@ -19,10 +19,21 @@ class ProjectHammerDriver(CLIDriver):
         return extra_hooks
     
     def get_extra_synthesis_hooks(self) -> List[HammerToolHookAction]:
+        # NOTE: pre/post hooks targeting 'syn_generic' / 'syn_map' must be
+        # registered BEFORE the replacement hooks below, otherwise the step
+        # has already been renamed and the target lookup fails.
         extra_hooks = [
             hammer_vlsi.HammerTool.make_pre_insertion_hook('syn_generic', lab_hooks.genus_set_derating),
+            # DFT scan chain insertion (no-op when dft.enable is unset/false).
+            # genus_dft_macros is persistent (runs at start, modifies input_files
+            # in-place before init_environment uses them). Persistent avoids the
+            # between-step write_db checkpoint that fails before init_environment.
+            hammer_vlsi.HammerTool.make_persistent_hook(lab_hooks.genus_dft_macros),
+            hammer_vlsi.HammerTool.make_pre_insertion_hook('syn_generic',      lab_hooks.genus_dft_setup),
+            hammer_vlsi.HammerTool.make_post_insertion_hook('syn_map',         lab_hooks.genus_dft_post_map),
+            # Replacement hooks rename the steps; keep these last
             hammer_vlsi.HammerTool.make_replacement_hook('syn_generic', essential_hooks.genus_syn_with_preserve),
-            hammer_vlsi.HammerTool.make_replacement_hook('syn_map',     essential_hooks.genus_maybe_syn_map)
+            hammer_vlsi.HammerTool.make_replacement_hook('syn_map',     essential_hooks.genus_maybe_syn_map),
         ]
         return extra_hooks
 
@@ -39,6 +50,9 @@ class ProjectHammerDriver(CLIDriver):
             # make_post_insertion_hook will execute the custom hook after the specified step. Examples:
             # hammer_vlsi.HammerTool.make_post_insertion_hook("init_design", example_tool_settings),
             hammer_vlsi.HammerTool.make_post_insertion_hook('place_opt_design', essential_hooks.innovus_snap_floorplan),
+            # DFT scanDEF read pre-place / post-route writeout (no-op when dft.enable is unset/false)
+            hammer_vlsi.HammerTool.make_post_insertion_hook('init_design',  lab_hooks.innovus_read_scandef),
+            hammer_vlsi.HammerTool.make_post_insertion_hook('route_design', lab_hooks.innovus_write_scandef_postroute),
             # hammer_vlsi.HammerTool.make_post_insertion_hook('write_design', lab_hooks.innovus_gen_magic_view_script),
             # hammer_vlsi.HammerTool.make_post_insertion_hook('write_design', lab_hooks.innovus_gen_klayout_view_script)
 
