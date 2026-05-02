@@ -133,12 +133,12 @@ def genus_dft_setup(x: hammer_vlsi.HammerTool) -> bool:
     x.verbose_append(f'define_scan_chain   -name top_chain -sdi {si} -sdo {so} -shift_enable se')
     # Allow shift enable to override clock-gating cells during shift
     x.verbose_append('set_db [current_design] .lp_clock_gating_test_signal use_shift_enable')
-    # Exclude the JTAG TAP from scan: it can't be scanned (it drives scan)
-    # and its FFs run on TCK, a separate clock domain. dft_dont_scan tells
-    # connect_scan_chains to skip every flop inside the tap_top module.
-    # `catch` silently no-ops when the TAP isn't instantiated (tap_top.v
-    # is in the source list but only instantiated under `ifdef DFT_EN).
-    x.verbose_append(f'catch {{ set_db module:{x.top_module}/tap_top .dft_dont_scan true }}')
+    # Submodule-level dft_dont_scan markings live in genus_dft_post_map: at
+    # this point in the flow (pre_syn_generic) Genus has read RTL but not
+    # elaborated the module hierarchy, so `module:<top>/<sub>` references
+    # fail with TUI-182 even with `catch`. Setting the attribute after
+    # syn_map (when the elaborated hierarchy is resolved) is reliable, and
+    # still runs before fix_dft_violations / convert_to_scan / connect.
     return True
 
 def genus_dft_post_map(x: hammer_vlsi.HammerTool) -> bool:
@@ -159,6 +159,35 @@ def genus_dft_post_map(x: hammer_vlsi.HammerTool) -> bool:
     # registers end up excluded from the scan chain. Stays false through
     # connect_scan_chains so chain stitching is also unhindered.
     x.verbose_append('set_db / .ui_respects_preserve false')
+
+    # User-configurable scan exclusions (dft.dont_scan_instances in YAML).
+    # Each entry is an instance hierarchy path relative to the top module
+    # — e.g. "u_bsg_link_wrapper" for a direct child, "u_soc_top/spi_inst"
+    # for a grandchild. All flops in the named instance (recursively) are
+    # skipped by connect_scan_chains.
+    #
+    # Instance paths (not module names) are used because parameterized
+    # modules get uniquified during elaboration (e.g. bsg_link_wrapper
+    # becomes bsg_link_wrapper_<param_hash>), so `module:<top>/<name>`
+    # silently fails with TUI-182 for any module that takes parameters.
+    # `get_db hinsts` walks the instance tree using the user-written
+    # instance names from the RTL, which are stable.
+    #
+    # This must run BEFORE check_dft_rules so fix_dft_violations doesn't
+    # waste time clock-muxing flops we're about to drop. An empty result
+    # from get_db is silently a no-op for set_db, but `catch` is added
+    # for safety against future Genus versions changing that behaviour —
+    # always verify with `grep length: build/syn-rundir/reports/<top>-DFTchains`
+    # after changing the list, since silent no-ops mask real config bugs.
+    try:
+        dont_scan = x.get_setting('dft.dont_scan_instances') or []
+    except KeyError:
+        dont_scan = []
+    for inst in dont_scan:
+        full = f'{top}/{inst}'
+        x.verbose_append(
+            f'catch {{ set_db [get_db hinsts {full}] .dft_dont_scan true }}')
+
     x.verbose_append('check_dft_rules')
     x.verbose_append(f'fix_dft_violations -clock -async_set -async_reset -test_control se -scan_clock_pin {clk}')
     x.verbose_append('check_dft_rules -advanced')
