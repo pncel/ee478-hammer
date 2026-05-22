@@ -203,9 +203,9 @@ class Conformal(HammerFormalTool, CadenceTool):
             return False
         golden_files = list(map(lambda name: os.path.join(os.getcwd(), name), self.reference_files))
         golden_files.extend(lib_v_files) # TODO test
-        append(f"read_design {' '.join(golden_files)} -sv09 -sva -golden")
+        append(f"read_design {' '.join(golden_files)} -sv09 -golden")
         revised_files = list(map(lambda name: os.path.join(os.getcwd(), name), self.input_files))
-        append(f"read_design {' '.join(revised_files)} -sv09 -sva -revised")
+        append(f"read_design {' '.join(revised_files)} -sv09 -revised")
 
         # Set top module
         append(f"set_root_module {self.top_module} -both")
@@ -232,6 +232,13 @@ class Conformal(HammerFormalTool, CadenceTool):
         append('set_flatten_model -balanced_modeling')
 
         append('set_analyze_option -auto -report_map')
+
+        # Constrain scan enable low so DFT scan chain doesn't block equivalence.
+        # Syntax: add_pin_constraints <value> <pin> [-golden|-revised]
+        # Braces around pin name prevent TCL from interpreting [...] as command substitution.
+        for pin in self.get_setting("formal.inputs.scan_enable_pins", nullvalue=[]):
+            append(f'add_pin_constraints 0 {{{pin}}} -golden')
+            append(f'add_pin_constraints 0 {{{pin}}} -revised')
 
         if self.get_setting("formal.conformal.license") == "L":
             append("report_black_box")

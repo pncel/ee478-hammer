@@ -23,5 +23,9 @@ formal.inputs:
   # Note: select features will require a XL/GXL license (see license_level key).
   check: "lec"
 
-  # Searth path for files to include with HDL source (each called with "add_search_path")
-  hdl_search_paths: ""
+  # Search path for files to include with HDL source (each called with "add_search_path")
+  hdl_search_paths: []
+
+  # Scan enable pin names to constrain to 0 for DFT-inserted designs.
+  # Prevents scan chain from blocking equivalence checking in functional mode.
+  scan_enable_pins: []
