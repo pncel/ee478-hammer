@@ -29,9 +29,3 @@ formal.inputs:
   # Scan enable pin names to constrain to 0 for DFT-inserted designs.
   # Prevents scan chain from blocking equivalence checking in functional mode.
   scan_enable_pins: []
-
-  # Scan output pin names to exclude from comparison.
-  # scan_out is undriven in RTL but driven by the last scan flip-flop in the
-  # synthesized netlist, causing a known non-equivalence that is not a real bug.
-  # Listing it here generates "add_ignored_outputs" so LEC reports "Equivalent".
-  scan_output_pins: []
