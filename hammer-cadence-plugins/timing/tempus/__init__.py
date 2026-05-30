@@ -367,7 +367,23 @@ class Tempus(HammerTimingTool, CadenceTool):
         # Note this reports everything - setup, hold, recovery, etc.
         verbose_append(f"report_timing -retime path_slew_propagation -max_paths {self.max_paths} > {self.top_module}_timing_setup.rpt")
         verbose_append(f"report_timing -check_type hold -retime path_slew_propagation -max_paths {self.max_paths} > {self.top_module}_timing_hold.rpt")
-        verbose_append(f"report_timing -unconstrained -debug unconstrained -max_paths {self.max_paths} > {self.top_module}_timing_unconstrained.rpt")
+        # Full unconstrained report annotated with path exceptions.
+        # `-path_exceptions all` tags each path with:
+        #   * "Applied exceptions"  — set_false_path / set_max_delay actively in effect
+        #   * "Ignored exceptions"  — exception exists but Tempus's hold/uncons machinery
+        #     didn't apply it (still honored by Innovus at routing)
+        #   * No annotation         — path has NO exception at all (the real concerns)
+        verbose_append(f"report_timing -unconstrained -debug unconstrained -path_exceptions all -max_paths {self.max_paths} > {self.top_module}_timing_unconstrained.rpt")
+        # Focused report: only paths ending at register D pins (real data setup
+        # endpoints).  Filters out the SE / CDN / SDN / CP endpoints that dominate
+        # the full report as Tempus reporting noise (scan_en distribution,
+        # synchronized async-reset fanout, clock-tree PULSE_WIDTH).
+        verbose_append(f"report_timing -unconstrained -debug unconstrained -path_exceptions all -to [get_pins -hier -filter {{name == D}} -of_objects [all_registers]] -max_paths {self.max_paths} > {self.top_module}_timing_unconstrained_data_only.rpt")
+        # check_timing reports TRULY unconstrained endpoints (constraint-completeness
+        # check that — unlike report_timing -unconstrained — doesn't list paths with
+        # set_false_path or set_max_delay applied.  Cleanest view of "what's actually
+        # missing a constraint."
+        verbose_append(f"check_timing -verbose > {self.top_module}_check_timing.rpt")
 
         if self.get_setting("timing.tempus.si_glitch"):
             # SI max/min delay
