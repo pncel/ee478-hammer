@@ -440,6 +440,32 @@ class Tempus(HammerTimingTool, CadenceTool):
         # set_false_path or set_max_delay applied.  Cleanest view of "what's actually
         # missing a constraint."
         verbose_append(f"check_timing -verbose > {self.top_module}_check_timing.rpt")
+        # Dead-constraints check: lists every set_false_path / set_max_delay /
+        # set_multicycle_path that did NOT match any path (usually typo in pin
+        # name, or cell got renamed by synthesis).  Anything here is a stale or
+        # buggy SDC line worth investigating.
+        verbose_append(f"report_path_exceptions -ignored > {self.top_module}_path_exceptions_ignored.rpt")
+        # Clock-definition sanity check: lists every defined clock with period,
+        # waveform, propagation status, uncertainty.  Verify all expected clocks
+        # are declared and there are no accidentally-overlapping create_clock
+        # calls or unresolved generated clocks.
+        verbose_append(f"report_clocks > {self.top_module}_clocks.rpt")
+
+        # QoR summary: per-clock, per-check-type WNS/TNS/#failing.  One screen
+        # to sanity-check the whole design after any flow run.
+        verbose_append(f"report_timing_summary > {self.top_module}_timing_summary.rpt")
+        # All-violator catch-all: lists every violator across every check type
+        # (setup, hold, recovery, removal, pulse_width, transition, capacitance,
+        # fanout, clock_gating, latch_borrow) in one report.  If a category
+        # doesn't appear here, you have zero violators of that type — so this
+        # is the "did I miss anything" backstop.
+        verbose_append(f"report_constraint -all_violators > {self.top_module}_constraint_violators.rpt")
+        # Detailed reports for the less-common check types.  These are NOT
+        # included in the default report_timing (which is setup only) — without
+        # them a pulse-width or recovery/removal violation can hide unnoticed.
+        verbose_append(f"report_timing -check_type pulse_width -max_paths {self.max_paths} > {self.top_module}_timing_pulse_width.rpt")
+        verbose_append(f"report_timing -check_type recovery   -max_paths {self.max_paths} > {self.top_module}_timing_recovery.rpt")
+        verbose_append(f"report_timing -check_type removal    -max_paths {self.max_paths} > {self.top_module}_timing_removal.rpt")
 
         if self.get_setting("timing.tempus.si_glitch"):
             # SI max/min delay
