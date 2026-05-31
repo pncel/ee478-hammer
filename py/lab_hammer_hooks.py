@@ -188,6 +188,23 @@ def genus_dft_post_map(x: hammer_vlsi.HammerTool) -> bool:
         x.verbose_append(
             f'catch {{ set_db [get_db hinsts {full}] .dft_dont_scan true }}')
 
+    # Override list: re-enable scan stitching for specific sub-instances
+    # nested inside dont_scan_instances above.  Genus's dft_dont_scan
+    # attribute is hierarchical — set true on the parent, then false on a
+    # selected child to scan just that child's flops.  Useful when you want
+    # to drop an entire block (e.g. u_bsg_link_wrapper) from the chain but
+    # keep a specific FIFO (e.g. its core_clk-domain twofer) included so
+    # ATPG fault coverage stays high.
+    # Must run AFTER the dont_scan loop so child override wins.
+    try:
+        do_scan = x.get_setting('dft.do_scan_instances') or []
+    except KeyError:
+        do_scan = []
+    for inst in do_scan:
+        full = f'{top}/{inst}'
+        x.verbose_append(
+            f'catch {{ set_db [get_db hinsts {full}] .dft_dont_scan false }}')
+
     x.verbose_append('check_dft_rules')
     x.verbose_append(f'fix_dft_violations -clock -async_set -async_reset -test_control se -scan_clock_pin {clk}')
     x.verbose_append('check_dft_rules -advanced')
