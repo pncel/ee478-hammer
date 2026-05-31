@@ -246,6 +246,14 @@ class Genus(HammerSynthesisTool, CadenceTool):
         vhdl_files = [f for f in abspath_input_files if f.endswith((".vhd", ".vhdl"))]
         verilog_sv_files = [f for f in abspath_input_files if f.endswith((".v", ".sv", ".vh", ".vi", ".svh"))]
 
+        # Set the Verilog/SystemVerilog `include search path so files like BSG's
+        # `include "bsg_defines.v"` resolve at preprocessing time instead of
+        # warning VLOGPT-650.  The setting is fed from `synthesis.inputs.hdl_search_paths`
+        # (mirroring the existing `formal.inputs.hdl_search_paths` used by Conformal).
+        hdl_search_paths = self.get_setting("synthesis.inputs.hdl_search_paths", nullvalue=[])
+        if hdl_search_paths:
+            verbose_append("set_db init_hdl_search_path {{ {} }}".format(" ".join(hdl_search_paths)))
+
         # Read the RTL.
         if vhdl_files:
             verbose_append("read_hdl -vhdl {{ {} }}".format(" ".join(vhdl_files)))

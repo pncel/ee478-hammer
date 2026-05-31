@@ -379,6 +379,12 @@ class Tempus(HammerTimingTool, CadenceTool):
         # the full report as Tempus reporting noise (scan_en distribution,
         # synchronized async-reset fanout, clock-tree PULSE_WIDTH).
         verbose_append(f"report_timing -unconstrained -debug unconstrained -path_exceptions all -to [get_pins -hier -filter {{name == D}} -of_objects [all_registers]] -max_paths {self.max_paths} > {self.top_module}_timing_unconstrained_data_only.rpt")
+        # Report paths in the "default" path group.  Tempus groups paths by
+        # check type; CLOCK-to-CLOCK set_max_delay paths (e.g. dn_clk -> core_clk
+        # for the bsg async CDC bounds) land here instead of the normal setup/hold
+        # groups, so they don't appear in chip_top_timing_setup.rpt unless we
+        # specifically request the default group.
+        verbose_append(f"report_timing -path_group default -max_paths {self.max_paths} > {self.top_module}_timing_default_group.rpt")
         # check_timing reports TRULY unconstrained endpoints (constraint-completeness
         # check that — unlike report_timing -unconstrained — doesn't list paths with
         # set_false_path or set_max_delay applied.  Cleanest view of "what's actually
