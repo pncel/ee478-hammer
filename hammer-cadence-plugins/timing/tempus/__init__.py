@@ -149,23 +149,44 @@ class Tempus(HammerTimingTool, CadenceTool):
             sdc_files_arg=sdc_files_arg
         ))
 
+        # Optional second constraint mode for DFT scan-shift analysis (mirrors
+        # the same handling in hammer-cadence-plugins/common/tool.py). Tempus
+        # then reports both functional and scan-mode timing in one run.
+        scan_sdc_files = self.get_setting('vlsi.inputs.scan_sdc_files', nullvalue=[])
+        scan_constraint_mode = None
+        if scan_sdc_files:
+            scan_constraint_mode = "scan_constraint_mode"
+            append_mmmc("create_constraint_mode -name {name} -sdc_files [list {files}]".format(
+                name=scan_constraint_mode,
+                files=" ".join(scan_sdc_files)
+            ))
+
         corners = self.get_mmmc_corners()  # type: List[MMMCCorner]
         # In parallel, create the delay corners
         if corners:
             setup_view_names = [] # type: List[str]
             hold_view_names = [] # type: List[str]
             extra_view_names = [] # type: List[str]
+            scan_setup_view_names = [] # type: List[str]
+            scan_hold_view_names = [] # type: List[str]
+            scan_extra_view_names = [] # type: List[str]
             for corner in corners:
                 # Setting up views for all defined corner types: setup, hold, extra
                 if corner.type is MMMCCornerType.Setup:
                     corner_name = "{n}.{t}".format(n=corner.name, t="setup")
                     setup_view_names.append("{n}_view".format(n=corner_name))
+                    if scan_constraint_mode:
+                        scan_setup_view_names.append("{n}_scan_view".format(n=corner_name))
                 elif corner.type is MMMCCornerType.Hold:
                     corner_name = "{n}.{t}".format(n=corner.name, t="hold")
                     hold_view_names.append("{n}_view".format(n=corner_name))
+                    if scan_constraint_mode:
+                        scan_hold_view_names.append("{n}_scan_view".format(n=corner_name))
                 elif corner.type is MMMCCornerType.Extra:
                     corner_name = "{n}.{t}".format(n=corner.name, t="extra")
                     extra_view_names.append("{n}_view".format(n=corner_name))
+                    if scan_constraint_mode:
+                        scan_extra_view_names.append("{n}_scan_view".format(n=corner_name))
                 else:
                     raise ValueError("Unsupported MMMCCornerType")
 
@@ -198,13 +219,18 @@ class Tempus(HammerTimingTool, CadenceTool):
                     name=corner_name,
                     constraint=constraint_mode
                 ))
+                if scan_constraint_mode:
+                    append_mmmc("create_analysis_view -name {name}_scan_view -delay_corner {name}_delay -constraint_mode {constraint}".format(
+                        name=corner_name,
+                        constraint=scan_constraint_mode
+                    ))
 
             # Finally, apply the analysis view.
             # TODO: should not need to analyze extra views as well. Defaulting to hold for now (min. runtime impact).
             append_mmmc("set_analysis_view -setup {{ {setup_views} }} -hold {{ {hold_views} {extra_views} }}".format(
-                setup_views=" ".join(setup_view_names),
-                hold_views=" ".join(hold_view_names),
-                extra_views=" ".join(extra_view_names)
+                setup_views=" ".join(setup_view_names + scan_setup_view_names),
+                hold_views=" ".join(hold_view_names + scan_hold_view_names),
+                extra_views=" ".join(extra_view_names + scan_extra_view_names)
             ))
         else:
             # First, create an Innovus library set.
