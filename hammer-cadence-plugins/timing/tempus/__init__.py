@@ -400,6 +400,30 @@ class Tempus(HammerTimingTool, CadenceTool):
         #     didn't apply it (still honored by Innovus at routing)
         #   * No annotation         — path has NO exception at all (the real concerns)
         verbose_append(f"report_timing -unconstrained -debug unconstrained -path_exceptions all -max_paths {self.max_paths} > {self.top_module}_timing_unconstrained.rpt")
+        # When a second constraint mode (scan_constraint_mode) is active, the
+        # combined unconstrained report above mixes functional and scan-shift
+        # paths.  Emit two per-mode variants so users can triage each in
+        # isolation.  Compute the view-name lists in Python from the MMMC
+        # corners (matches the naming convention in common/tool.py:
+        # functional = "<corner>.<type>_view", scan = "<corner>.<type>_scan_view").
+        if self.get_setting('vlsi.inputs.scan_sdc_files', nullvalue=[]):
+            func_views = []
+            scan_views = []
+            for corner in self.get_mmmc_corners():
+                if corner.type is MMMCCornerType.Setup:
+                    base = f"{corner.name}.setup"
+                elif corner.type is MMMCCornerType.Hold:
+                    base = f"{corner.name}.hold"
+                elif corner.type is MMMCCornerType.Extra:
+                    base = f"{corner.name}.extra"
+                else:
+                    continue
+                func_views.append(f"{base}_view")
+                scan_views.append(f"{base}_scan_view")
+            fv = " ".join(func_views)
+            sv = " ".join(scan_views)
+            verbose_append(f"report_timing -unconstrained -debug unconstrained -path_exceptions all -view {{{fv}}} -max_paths {self.max_paths} > {self.top_module}_timing_unconstrained_func.rpt")
+            verbose_append(f"report_timing -unconstrained -debug unconstrained -path_exceptions all -view {{{sv}}} -max_paths {self.max_paths} > {self.top_module}_timing_unconstrained_scan.rpt")
         # Focused report: only paths ending at register D pins (real data setup
         # endpoints).  Filters out the SE / CDN / SDN / CP endpoints that dominate
         # the full report as Tempus reporting noise (scan_en distribution,
